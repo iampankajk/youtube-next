@@ -11,6 +11,7 @@ interface VideoState {
   loading: boolean;
   error: string | null;
   searchQuery: string;
+  nextPageToken: string | null;
 }
 
 const initialState: VideoState = {
@@ -18,12 +19,19 @@ const initialState: VideoState = {
   loading: false,
   error: null,
   searchQuery: "",
+  nextPageToken: null,
 };
 
 export const fetchVideos = createAsyncThunk(
   "videos/fetchVideos",
-  async (searchQuery: string) => {
-    const response = await fetchVideosApi(searchQuery);
+  async ({
+    searchQuery,
+    pageToken,
+  }: {
+    searchQuery: string;
+    pageToken?: string;
+  }) => {
+    const response = await fetchVideosApi(searchQuery, pageToken);
     return response;
   },
 );
@@ -34,6 +42,8 @@ const videoSlice = createSlice({
   reducers: {
     setSearchQuery: (state, action: PayloadAction<string>) => {
       state.searchQuery = action.payload;
+      state.videos = [];
+      state.nextPageToken = null;
     },
   },
   extraReducers: (builder) => {
@@ -44,7 +54,8 @@ const videoSlice = createSlice({
       })
       .addCase(fetchVideos.fulfilled, (state, action) => {
         state.loading = false;
-        state.videos = action.payload;
+        state.videos = [...state.videos, ...action.payload.videos];
+        state.nextPageToken = action.payload.nextPageToken;
       })
       .addCase(fetchVideos.rejected, (state, action) => {
         state.loading = false;

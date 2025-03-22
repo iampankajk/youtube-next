@@ -66,41 +66,43 @@ type YouTubeCommentItem = {
   };
 };
 
-export const fetchVideos = async (searchQuery: string): Promise<Video[]> => {
+export const fetchVideos = async (searchQuery: string, pageToken?: string) => {
   try {
     const response = await fetch(
-      `${BASE_URL}/search?q=${encodeURIComponent(
-        searchQuery,
-      )}&part=snippet&type=video&maxResults=20&key=${process.env.NEXT_PUBLIC_GOOGLE_API_KEY}`,
+      `${BASE_URL}/search?q=${encodeURIComponent(searchQuery)}&part=snippet&type=video&maxResults=20&pageToken=${pageToken || ""}&key=${process.env.NEXT_PUBLIC_GOOGLE_API_KEY}`,
     );
 
     if (!response.ok) throw new Error("Failed to fetch videos");
 
     const data = await response.json();
     const videoIds = data.items
-      .map((item: YouTubeSearchItem) => item.id.videoId)
+      .map((item: { id: { videoId: string } }) => item.id.videoId)
       .join(",");
     const detailsResponse = await fetch(
       `${BASE_URL}/videos?part=snippet,contentDetails,statistics&id=${videoIds}&key=${process.env.NEXT_PUBLIC_GOOGLE_API_KEY}`,
     );
+
+    if (!detailsResponse.ok) throw new Error("Failed to fetch video details");
+
     const detailsData = await detailsResponse.json();
 
-    return detailsData.items.map((item: YouTubeVideoItem) => ({
-      id: item.id,
-      title: item.snippet.title,
-      description: item.snippet.description,
-      thumbnail: item.snippet.thumbnails.medium.url,
-      channelTitle: item.snippet.channelTitle,
-      channelThumbnail: "",
-      publishedAt: item.snippet.publishedAt,
-      duration: formatDuration(item.contentDetails.duration),
-      viewCount: formatCount(parseInt(item.statistics.viewCount)),
-      likeCount: formatCount(parseInt(item.statistics.likeCount)),
-      subscriberCount: "",
-    }));
+    return {
+      videos: detailsData.items.map((item: any) => ({
+        id: item.id,
+        title: item.snippet.title,
+        description: item.snippet.description,
+        thumbnail: item.snippet.thumbnails.medium.url,
+        channelTitle: item.snippet.channelTitle,
+        publishedAt: item.snippet.publishedAt,
+        duration: item.contentDetails.duration,
+        viewCount: item.statistics.viewCount,
+        likeCount: item.statistics.likeCount,
+      })),
+      nextPageToken: data.nextPageToken || null,
+    };
   } catch (error) {
     console.error("Error fetching videos:", error);
-    return [];
+    return { videos: [], nextPageToken: null };
   }
 };
 
