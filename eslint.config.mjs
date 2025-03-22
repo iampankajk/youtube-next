@@ -30,6 +30,20 @@ export default [
         es2021: true,
       },
     },
+    overrides: [
+      {
+        files: ["*.ts", "*.tsx"],
+      },
+      {
+        files: ["jest.config.js"],
+        env: {
+          node: true,
+        },
+        parserOptions: {
+          sourceType: "script",
+        },
+      },
+    ],
     rules: {
       "no-unused-vars": [
         "error",
