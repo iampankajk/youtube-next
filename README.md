@@ -34,7 +34,7 @@ Ensure you have the following installed:
 1. Clone the repository:
 
    ```sh
-   git clone https://github.com/yourusername/youtube-clone.git
+   git clone https://github.com/iampankajk/youtube-clone.git
    cd youtube-clone
    ```
 
